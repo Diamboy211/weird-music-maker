@@ -1,0 +1,14 @@
+  w
+a─┼─d  to move around
+  s
+
+j to decrease the selected note
+k to increase the selected note
+c to clear the selected note
+f to make the selected note A4
+e to save
+z to decrease bpm
+x to increase bpm
+r to switch accidental mode
+* to add an instrument
++ to add 1 tick
