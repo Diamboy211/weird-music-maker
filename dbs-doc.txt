@@ -1,0 +1,32 @@
+byte 0-3: data size (32-bit uint)
+byte 4-5: notes per min (16-bit uint)
+byte 6: num. instruments (8-bit uint)
+byte 7: unused
+
+velocity is overrated
+
+each note is a signed char that stores the pitch in half-steps from A4, -128 (0x80) is silence
+example: 0 = A4
+         1 = Bb4
+        -1 = Ab4
+
+data:
+the data is stored like this:
+
+  FD 01 04...
+  02 05 09...
+  00 04 07...
+  02 05 09...
+  FB FF 02...
+  FD 01 04...
+  FE 02 05...
+  00 04 07...
+  02 05 09...
+  ╚════╦════╝
+num. instruments
+
+example dbs file:
+header:
+08 00 00 00 78 00 01 00
+data:
+00 02 03 05 07 08 0A 0C
