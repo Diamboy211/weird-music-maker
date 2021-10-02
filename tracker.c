@@ -159,17 +159,22 @@ int main(int argc, char **argv)
 				break;
 			case 'j': dbs_body[cy*dbs_instr+cx]--; break;
 			case 'k': dbs_body[cy*dbs_instr+cx]++; break;
+			case 'n': dbs_body[cy*dbs_instr+cx] -= 12; break;
+			case 'm': dbs_body[cy*dbs_instr+cx] += 12; break;
 			case 'c': dbs_body[cy*dbs_instr+cx] = -128; break;
 			case 'f': dbs_body[cy*dbs_instr+cx] = 0; break;
 			case 'e':
 				mvprintw(y/2, x/2-5, "save? (y/n)");
+				dbs_length *= 2;
 				memcpy(dbs_header, &dbs_length, 4);
+				dbs_length /= 2;
 				memcpy(dbs_header+4, &dbs_bpm, 2);
 				memcpy(dbs_header+6, &dbs_instr, 1);
-				if (getch() == y)
+				if (getch() == 'y')
 				{
-					FILE *out_f = fopen(file_name, "wb");
+					FILE *out_f = fopen("file3.dbs", "wb");
 					fwrite(dbs_header, sizeof(char), 8, out_f);
+					fwrite(dbs_body, sizeof(char), dbs_length, out_f);
 					fwrite(dbs_body, sizeof(char), dbs_length, out_f);
 					fclose(out_f);
 				}
@@ -199,6 +204,16 @@ int main(int argc, char **argv)
 				dbs_body[dbs_length+1] = 0;
 				dbs_length += dbs_instr;
 				dbs_ticks++;
+				break;
+			case '(':
+				for (int i = 0; i < dbs_length; i++)
+					if (dbs_body[i] != -128)
+						dbs_body[i]--;
+				break;
+			case ')':
+				for (int i = 0; i < dbs_length; i++)
+					if (dbs_body[i] != -128)
+						dbs_body[i]++;
 				break;
 		}
 	}

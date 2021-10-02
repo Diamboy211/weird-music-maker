@@ -4,6 +4,8 @@ a─┼─d  to move around
 
 j to decrease the selected note
 k to increase the selected note
+n to decrease the selected note by 12
+m to increase the selected note by 12
 c to clear the selected note
 f to make the selected note A4
 e to save

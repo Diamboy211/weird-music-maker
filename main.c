@@ -20,6 +20,19 @@ typedef struct
 
 void create_default_adsr(env_adsr *o, float press_time, float unpress_time)
 {
+	if (unpress_time < 0.02f)
+	{
+	o->attack_time = 0.001f;
+	o->decay_time = 0.001f;
+	o->release_time = 0.001f;
+
+	o->attack_amp = 0.0f;
+	o->sustain_amp = 0.0f;
+
+	o->press_time = press_time;
+	o->unpress_time = unpress_time;
+	
+	}
 	o->attack_time = 0.01f;
 	o->decay_time = 0.01f;
 	o->release_time = 0.02f;
@@ -38,6 +51,7 @@ float lerp(float t0, float t1, float t)
 
 float adsr_amp(env_adsr *env, float t)
 {
+	if (!env) return 1.f;
 	float amp = 0.f;
 	if (t > env->unpress_time)
 	{
@@ -115,9 +129,29 @@ int main(int argc, char **argv)
 	// get notes
 	dbs_body = malloc(dbs_size);
 	fread(dbs_body, sizeof(char), dbs_size, in_f);
-	for (int i = 0; i < dbs_size; i++) printf("%02x ", dbs_body[i]);
-	printf("\n");
 	// this shitty code just to work out how long is the longest note
+	uint32_t *note_len = malloc(sizeof(uint32_t) * dbs_size);
+	{
+		uint32_t *tmp;
+		int l = 256;
+		for (int i = 0; i < dbs_instr; i++)
+		{
+			for (int j = 0; j < dbs_ticks; j++)
+			{
+				if (l != (int)dbs_body[j*dbs_instr+i])
+				{
+					tmp = note_len + j*dbs_instr+i;
+					*tmp = 1;
+					l = dbs_body[j*dbs_instr+i];
+				}
+				else
+				{
+					(*tmp)++;
+					note_len[j*dbs_instr+i] = 0;
+				}
+			}
+		}
+	}
 	uint32_t max_len = 0;
 	{
 		uint32_t *_max_len = malloc(dbs_instr);
@@ -143,7 +177,6 @@ int main(int argc, char **argv)
 		free(_max_len);
 		free(_last);
 	}
-	printf("%d\nwav header init\n", max_len);
 
 	// ahhhh the good old wav file header
 	const uint32_t ssize = int_time(dbs_time, srate) * 2;
@@ -159,8 +192,6 @@ int main(int argc, char **argv)
 	uint16_t bc8 = bps * nchannels / 8;
 	char *dch = "data"; // data chunk header
 	uint32_t dsize = ssize*2; // size of data
-	
-	printf("memcpys");
 
 	memcpy(buf, marker, 4);
 	memcpy(buf+4, &size, 4);
@@ -179,31 +210,34 @@ int main(int argc, char **argv)
 	short *sbuf = (short *)(buf+44);
 	
 	env_adsr *envs = malloc(sizeof(env_adsr) * max_len);
-	for (int i = 0; i < max_len; i++)
+	for (int i = 0; i <= max_len; i++)
 	{
-		create_default_adsr(envs+i, 0.f, dbs_notedur * (i + 1));
+		create_default_adsr(envs+i, 0.f, dbs_notedur * i);
 	}
-
-	for (int i = 0; i < int_time(dbs_notedur + 0.01f, srate); i++)
+	for (int i = 0; i < dbs_instr; i++)
+	for (int j = 0; j < dbs_ticks; j++)
 	{
-		for (int j = 0; j < dbs_instr; j++)
+		for (int k = 0;
+		k < int_time(dbs_notedur * note_len[j*dbs_instr+i], srate);
+		k++)
 		{
-			int t = i;
-			for (int k = 0; k < dbs_ticks; k++)
-			{
-				sbuf[t] += sin_osc(8000,
-					get_freq(dbs_body[k*dbs_instr+j]),
-					i, srate, envs);
-				t += int_time(dbs_notedur, srate);
-			}
+			sbuf[k+int_time(dbs_notedur * j, srate)]
+				+= sin_osc(5000, get_freq(dbs_body[j*dbs_instr+i]),
+					k, srate, NULL) +
+					sin_osc(3000, 2*get_freq(dbs_body[j*dbs_instr+i]),
+					k, srate, NULL);
 		}
-		//printf("\n");
 	}
 	FILE *f = fopen(out_name, "wb");
 	fwrite(buf, 44+ssize, 1, f);
 	fclose(f);
+	printf("free(buf)\n");
 	free(buf);
+	printf("free(dbs_header)\n");
 	free(dbs_header);
+	printf("free(note_len)\n");
+	free(note_len);
+	printf("free(dbs_body)\n");
 	free(dbs_body);
 	return 0;
 }
