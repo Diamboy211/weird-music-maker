@@ -9,4 +9,4 @@ run `sh make.sh` to build, change clang to gcc if you dont have clang
 
 `./main` makes the .wav file
 
-this is not working, i fixed and improved the code on my iphone but it broke
+this is only half working. i need to sort out the heap stuff but i'm too lazy
